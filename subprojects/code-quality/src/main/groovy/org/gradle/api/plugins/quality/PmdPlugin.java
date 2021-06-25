@@ -17,15 +17,18 @@ package org.gradle.api.plugins.quality;
 
 import org.gradle.api.JavaVersion;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.internal.ConventionMapping;
+import org.gradle.api.plugins.jvm.internal.JvmEcosystemUtilities;
 import org.gradle.api.plugins.quality.internal.AbstractCodeQualityPlugin;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.util.internal.VersionNumber;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,7 +51,13 @@ import static org.gradle.api.internal.lambdas.SerializableLambdas.action;
 public class PmdPlugin extends AbstractCodeQualityPlugin<Pmd> {
 
     public static final String DEFAULT_PMD_VERSION = "6.31.0";
+    private final JvmEcosystemUtilities jvmPluginServices;
     private PmdExtension extension;
+
+    @Inject
+    public PmdPlugin(JvmEcosystemUtilities jvmPluginServices) {
+        this.jvmPluginServices = jvmPluginServices;
+    }
 
     @Override
     protected String getToolName() {
@@ -146,7 +155,15 @@ public class PmdPlugin extends AbstractCodeQualityPlugin<Pmd> {
         task.setDescription("Run PMD analysis for " + sourceSet.getName() + " classes");
         task.setSource(sourceSet.getAllJava());
         ConventionMapping taskMapping = task.getConventionMapping();
-        taskMapping.map("classpath", () ->
-            sourceSet.getOutput().plus(sourceSet.getCompileClasspath()));
+        ConfigurationContainer configurations = project.getConfigurations();
+        Configuration compileConfiguration = configurations.getByName(sourceSet.getCompileClasspathConfigurationName());
+        Configuration runtimeConfiguration = configurations.getByName(sourceSet.getRuntimeClasspathConfigurationName());
+        Configuration pmdAuxClasspath = configurations.create(sourceSet.getName() + "PmdAuxClasspath");
+        pmdAuxClasspath.extendsFrom(compileConfiguration, runtimeConfiguration);
+        pmdAuxClasspath.setCanBeConsumed(false);
+        pmdAuxClasspath.setVisible(false);
+        pmdAuxClasspath.shouldResolveConsistentlyWith(compileConfiguration);
+        jvmPluginServices.configureAsRuntimeClasspath(pmdAuxClasspath);
+        taskMapping.map("classpath", () -> sourceSet.getOutput().plus(pmdAuxClasspath));
     }
 }
