@@ -22,20 +22,35 @@ import org.gradle.internal.service.scopes.Scopes;
 import org.gradle.internal.service.scopes.ServiceScope;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
+/**
+ * This should evolve to represent a build tree task graph. Currently, responsibilities are spread across this interface and {@link IncludedBuildControllers}.
+ */
 @ServiceScope(Scopes.BuildTree.class)
 public interface IncludedBuildTaskGraph {
     /**
-     * Queues a task for execution, but does not schedule it.
+     * Queues a task for execution, but does not schedule it. Use {@link #runScheduledTasks(Consumer)} or {@link IncludedBuildControllers#populateTaskGraphs()} to schedule tasks.
      */
-    void addTask(BuildIdentifier requestingBuild, BuildIdentifier targetBuild, String taskPath);
+    IncludedBuildTaskResource queueTaskForExecution(BuildIdentifier requestingBuild, BuildIdentifier targetBuild, TaskInternal task);
+
+    /**
+     * Queues a task for execution, but does not schedule it. Use {@link #runScheduledTasks(Consumer)} or {@link IncludedBuildControllers#populateTaskGraphs()} to schedule tasks.
+     */
+    IncludedBuildTaskResource queueTaskForExecution(BuildIdentifier requestingBuild, BuildIdentifier targetBuild, String taskPath);
 
     /**
      * Schedules and executes queued tasks, collecting any task failures into the given collection.
      */
     void runScheduledTasks(Consumer<? super Throwable> taskFailures);
 
-    IncludedBuildTaskResource.State getTaskState(BuildIdentifier targetBuild, String taskPath);
-
-    TaskInternal getTask(BuildIdentifier targetBuild, String taskPath);
+    /**
+     * Runs the given action against a new, empty task graph. This allows tasks to be run while calculating the task graph of the build tree, for example to run buildSrc tasks or
+     * to build local plugins.
+     *
+     * It would be better if this method were to create and return a "build tree task graph" object that can be populated, executed and then discarded. However, quite a few consumers
+     * of this type and {@link IncludedBuildControllers} and {@link org.gradle.execution.taskgraph.TaskExecutionGraphInternal} assume that there is a single reusable instance of
+     * these types available as services.
+     */
+    <T> T withNestedTaskGraph(Supplier<T> action);
 }

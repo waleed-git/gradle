@@ -16,7 +16,7 @@
 
 package org.gradle.integtests.composite
 
-import groovy.test.NotYetImplemented
+
 import org.gradle.integtests.fixtures.build.BuildTestFile
 import org.gradle.integtests.fixtures.resolve.ResolveTestFixture
 import spock.lang.Issue
@@ -371,7 +371,6 @@ class CompositeBuildDeclaredSubstitutionsIntegrationTest extends AbstractComposi
         "module('org.test:buildB')"                                                                             | "variant(project(':')) { capabilities { requireCapability('org:should-not-be-used') } }"
     }
 
-    @NotYetImplemented
     @Issue("https://github.com/gradle/gradle/issues/15659")
     def "resolves dependencies of included build with dependency substitution when substitution build contains buildSrc"() {
         given:
@@ -393,7 +392,6 @@ class CompositeBuildDeclaredSubstitutionsIntegrationTest extends AbstractComposi
         execute(buildA, ":buildC:dependencies")
     }
 
-    @NotYetImplemented
     @Issue("https://github.com/gradle/gradle/issues/15659")
     def "builds included build with dependency substitution when substitution build contains buildSrc"() {
         given:
@@ -415,7 +413,6 @@ class CompositeBuildDeclaredSubstitutionsIntegrationTest extends AbstractComposi
         execute(buildA, ":buildC:build")
     }
 
-    @NotYetImplemented
     @Issue("https://github.com/gradle/gradle/issues/15659")
     def "resolves dependencies of included build with dependency substitution when substitution build uses a plugin from its build-logic build"() {
         given:

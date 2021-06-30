@@ -16,13 +16,17 @@
 
 package org.gradle.composite.internal;
 
+import org.gradle.api.internal.TaskInternal;
+
 /**
  * A resource produced by a task in an included build.
  */
 public interface IncludedBuildTaskResource {
     enum State {
-        WAITING, SUCCESS, FAILED
+        WAITING, SUCCESS, FAILED;
     }
+
+    TaskInternal getTask();
 
     State getTaskState();
 }
