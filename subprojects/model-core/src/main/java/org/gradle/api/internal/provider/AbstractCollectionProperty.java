@@ -19,7 +19,6 @@ package org.gradle.api.internal.provider;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import org.gradle.api.Action;
-import org.gradle.api.Task;
 import org.gradle.api.internal.provider.Collectors.ElementFromProvider;
 import org.gradle.api.internal.provider.Collectors.ElementsFromArray;
 import org.gradle.api.internal.provider.Collectors.ElementsFromCollection;
@@ -410,26 +409,7 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
 
         @Override
         public ExecutionTimeValue<? extends C> calculateExecutionTimeValue() {
-            ProducerTaskVisitor visitor = new ProducerTaskVisitor();
-            for (ProviderInternal<? extends Iterable<? extends T>> provider : providers) {
-                provider.getProducer().visitProducerTasks(visitor);
-                if (visitor.hasTaskDependencies) {
-                    break;
-                }
-            }
-            if (visitor.hasTaskDependencies) {
-                return ExecutionTimeValue.changingValue(this);
-            }
-            return super.calculateExecutionTimeValue();
-        }
-
-        private static class ProducerTaskVisitor implements Action<Task> {
-            private boolean hasTaskDependencies;
-
-            @Override
-            public void execute(Task task) {
-                hasTaskDependencies = true;
-            }
+            return ExecutionTimeValue.changingValue(this);
         }
 
         @Override
