@@ -19,11 +19,8 @@ package org.gradle.execution.plan
 import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.api.internal.GradleInternal
 import org.gradle.api.internal.TaskInternal
-import org.gradle.api.internal.plugins.PluginManagerInternal
 import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.composite.internal.IncludedBuildTaskGraph
-import org.gradle.internal.build.BuildState
-import org.gradle.internal.service.ServiceRegistry
 import spock.lang.Specification
 
 class TaskNodeFactoryTest extends Specification {
@@ -37,20 +34,14 @@ class TaskNodeFactoryTest extends Specification {
     def e = task('e')
 
     def setup() {
-        def services = Stub(ServiceRegistry)
-        gradle.services >> services
-        services.get(BuildState) >> Stub(BuildState)
-        services.get(DocumentationRegistry) >> new DocumentationRegistry()
         project.gradle >> gradle
-        project.pluginManager >> Stub(PluginManagerInternal)
-
-        graph = new TaskNodeFactory(gradle, Stub(IncludedBuildTaskGraph))
+        graph = new TaskNodeFactory(gradle, Stub(DocumentationRegistry), Stub(IncludedBuildTaskGraph))
     }
 
     private TaskInternal task(String name) {
         Mock(TaskInternal) {
             getName() >> name
-            compareTo(_) >> { args -> name.compareTo(args[0].name)}
+            compareTo(_) >> { args -> name.compareTo(args[0].name) }
             getProject() >> project
         }
     }
