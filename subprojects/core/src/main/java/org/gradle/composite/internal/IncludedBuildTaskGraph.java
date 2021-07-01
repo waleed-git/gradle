@@ -30,14 +30,14 @@ import java.util.function.Supplier;
 @ServiceScope(Scopes.BuildTree.class)
 public interface IncludedBuildTaskGraph {
     /**
-     * Queues a task for execution, but does not schedule it. Use {@link #runScheduledTasks(Consumer)} or {@link IncludedBuildControllers#populateTaskGraphs()} to schedule tasks.
+     * Locates a task node in another build's work graph. Does not schedule the task for execution, use {@link IncludedBuildTaskResource#queueForExecution()} to queue the task for execution.
      */
-    IncludedBuildTaskResource queueTaskForExecution(BuildIdentifier requestingBuild, BuildIdentifier targetBuild, TaskInternal task);
+    IncludedBuildTaskResource locateTask(BuildIdentifier requestingBuild, BuildIdentifier targetBuild, TaskInternal task);
 
     /**
-     * Queues a task for execution, but does not schedule it. Use {@link #runScheduledTasks(Consumer)} or {@link IncludedBuildControllers#populateTaskGraphs()} to schedule tasks.
+     * Locates a task node in another build's work graph. Does not schedule the task for execution, use {@link IncludedBuildTaskResource#queueForExecution()} to queue the task for execution.
      */
-    IncludedBuildTaskResource queueTaskForExecution(BuildIdentifier requestingBuild, BuildIdentifier targetBuild, String taskPath);
+    IncludedBuildTaskResource locateTask(BuildIdentifier requestingBuild, BuildIdentifier targetBuild, String taskPath);
 
     /**
      * Schedules and executes queued tasks, collecting any task failures into the given collection.

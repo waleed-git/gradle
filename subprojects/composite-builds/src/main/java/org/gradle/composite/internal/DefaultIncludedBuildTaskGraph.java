@@ -44,21 +44,18 @@ public class DefaultIncludedBuildTaskGraph implements IncludedBuildTaskGraph {
     }
 
     @Override
-    public IncludedBuildTaskResource queueTaskForExecution(BuildIdentifier requestingBuild, BuildIdentifier targetBuild, TaskInternal task) {
-        return queueTaskForExecution(requestingBuild, targetBuild, task.getPath());
+    public IncludedBuildTaskResource locateTask(BuildIdentifier requestingBuild, BuildIdentifier targetBuild, TaskInternal task) {
+        return locateTask(requestingBuild, targetBuild, task.getPath());
     }
 
     @Override
-    public synchronized IncludedBuildTaskResource queueTaskForExecution(BuildIdentifier requestingBuild, BuildIdentifier targetBuild, String taskPath) {
-        if (isRoot(targetBuild)) {
-            if (findTaskInRootBuild(taskPath) == null) {
-                buildRegistry.getRootBuild().getBuild().getTaskGraph().addAdditionalEntryTask(taskPath);
-            }
-        } else {
-            buildControllerFor(targetBuild).queueForExecution(taskPath);
-        }
-
+    public synchronized IncludedBuildTaskResource locateTask(BuildIdentifier requestingBuild, BuildIdentifier targetBuild, String taskPath) {
         return new IncludedBuildTaskResource() {
+            @Override
+            public void queueForExecution() {
+                DefaultIncludedBuildTaskGraph.this.queueTask(targetBuild, taskPath);
+            }
+
             @Override
             public TaskInternal getTask() {
                 return DefaultIncludedBuildTaskGraph.this.getTask(targetBuild, taskPath);
@@ -78,6 +75,16 @@ public class DefaultIncludedBuildTaskGraph implements IncludedBuildTaskGraph {
         includedBuilds.populateTaskGraphs();
         includedBuilds.startTaskExecution();
         includedBuilds.awaitTaskCompletion(taskFailures);
+    }
+
+    private void queueTask(BuildIdentifier targetBuild, String taskPath) {
+        if (isRoot(targetBuild)) {
+            if (findTaskInRootBuild(taskPath) == null) {
+                buildRegistry.getRootBuild().getBuild().getTaskGraph().addAdditionalEntryTask(taskPath);
+            }
+        } else {
+            buildControllerFor(targetBuild).queueForExecution(taskPath);
+        }
     }
 
     private IncludedBuildTaskResource.State getTaskState(BuildIdentifier targetBuild, String taskPath) {
