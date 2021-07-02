@@ -19,6 +19,7 @@ package org.gradle.execution.plan
 import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.api.internal.GradleInternal
 import org.gradle.api.internal.TaskInternal
+import org.gradle.api.internal.plugins.PluginManagerInternal
 import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.composite.internal.IncludedBuildTaskGraph
 import spock.lang.Specification
@@ -35,6 +36,8 @@ class TaskNodeFactoryTest extends Specification {
 
     def setup() {
         project.gradle >> gradle
+        project.pluginManager >> Stub(PluginManagerInternal)
+
         graph = new TaskNodeFactory(gradle, Stub(DocumentationRegistry), Stub(IncludedBuildTaskGraph))
     }
 
