@@ -113,7 +113,7 @@ class ConfigurationCacheState(
             "corrupt state file"
         }
         configureBuild(buildState)
-        calculateTaskGraph(buildState)
+        calculateRootTaskGraph(buildState)
     }
 
     private
@@ -128,10 +128,23 @@ class ConfigurationCacheState(
     }
 
     private
-    fun calculateTaskGraph(state: CachedBuildState) {
+    fun calculateRootTaskGraph(state: CachedBuildState) {
+        scheduleNodes(state)
+        prepareTaskGraph(state)
+    }
+
+    private
+    fun scheduleNodes(state: CachedBuildState) {
         fireCalculateTaskGraph(state.build.gradle) {
             state.build.scheduleNodes(state.workGraph)
-            state.children.forEach(::calculateTaskGraph)
+            state.children.forEach(::scheduleNodes)
+        }
+    }
+
+    private fun prepareTaskGraph(state: CachedBuildState) {
+        fireCalculateTaskGraph(state.build.gradle) {
+            state.build.gradle.taskGraph.populate()
+            state.children.forEach(::prepareTaskGraph)
         }
     }
 

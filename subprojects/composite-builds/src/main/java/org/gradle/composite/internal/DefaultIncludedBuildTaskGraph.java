@@ -22,7 +22,7 @@ import org.gradle.internal.build.BuildStateRegistry;
 import org.gradle.internal.concurrent.CompositeStoppable;
 import org.gradle.internal.concurrent.ExecutorFactory;
 import org.gradle.internal.concurrent.ManagedExecutor;
-import org.gradle.internal.resources.ResourceLockCoordinationService;
+import org.gradle.internal.work.WorkerLeaseService;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -36,23 +36,23 @@ public class DefaultIncludedBuildTaskGraph implements IncludedBuildTaskGraph, Cl
     }
 
     private final BuildStateRegistry buildRegistry;
-    private final ResourceLockCoordinationService coordinationService;
+    private final WorkerLeaseService workerLeaseService;
     private final ProjectStateRegistry projectStateRegistry;
     private final ManagedExecutor executorService;
     private Thread owner;
     private State state = State.QueuingTasks;
     private IncludedBuildControllers includedBuilds;
 
-    public DefaultIncludedBuildTaskGraph(ExecutorFactory executorFactory, BuildStateRegistry buildRegistry, ResourceLockCoordinationService coordinationService, ProjectStateRegistry projectStateRegistry) {
+    public DefaultIncludedBuildTaskGraph(ExecutorFactory executorFactory, BuildStateRegistry buildRegistry, ProjectStateRegistry projectStateRegistry, WorkerLeaseService workerLeaseService) {
         this.buildRegistry = buildRegistry;
-        this.coordinationService = coordinationService;
         this.projectStateRegistry = projectStateRegistry;
         this.executorService = executorFactory.create("included builds");
+        this.workerLeaseService = workerLeaseService;
         this.includedBuilds = createControllers();
     }
 
     private DefaultIncludedBuildControllers createControllers() {
-        return new DefaultIncludedBuildControllers(executorService, buildRegistry, coordinationService, projectStateRegistry);
+        return new DefaultIncludedBuildControllers(executorService, buildRegistry, projectStateRegistry, workerLeaseService);
     }
 
     @Override

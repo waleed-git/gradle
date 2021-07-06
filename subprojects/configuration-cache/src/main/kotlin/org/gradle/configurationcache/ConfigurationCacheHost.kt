@@ -40,7 +40,6 @@ import org.gradle.internal.file.PathToFileResolver
 import org.gradle.internal.reflect.Instantiator
 import org.gradle.internal.resource.StringTextResource
 import org.gradle.internal.service.scopes.BuildScopeServiceRegistryFactory
-import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.util.Path
 import java.io.File
 
@@ -138,7 +137,6 @@ class ConfigurationCacheHost internal constructor(
         override fun scheduleNodes(nodes: Collection<Node>) {
             gradle.owner.populateWorkGraph {
                 it.addNodes(nodes)
-                it.populate()
             }
         }
 
@@ -159,7 +157,6 @@ class ConfigurationCacheHost internal constructor(
             isImplicit,
             owner,
             service(),
-            service<WorkerLeaseService>().currentWorkerLease,
             service(),
             service(),
             service()
