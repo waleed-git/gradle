@@ -20,7 +20,7 @@ import org.gradle.api.internal.TaskInternal;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
-interface IncludedBuildController {
+public interface IncludedBuildController {
     /**
      * Locates a task node in this build's work graph for use in another build's work graph.
      * Does not schedule the task for execution, use {@link IncludedBuildTaskResource#queueForExecution()} to queue the task for execution.
