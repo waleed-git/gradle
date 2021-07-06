@@ -20,7 +20,6 @@ import org.gradle.api.internal.project.ProjectStateRegistry;
 import org.gradle.execution.MultipleBuildFailures;
 import org.gradle.internal.UncheckedException;
 import org.gradle.internal.build.IncludedBuildState;
-import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.operations.BuildOperationRef;
 import org.gradle.internal.operations.CurrentBuildOperationRef;
 import org.gradle.internal.work.WorkerLeaseRegistry;
@@ -34,7 +33,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
-class DefaultIncludedBuildController extends AbstractIncludedBuildController implements Stoppable {
+class DefaultIncludedBuildController extends AbstractIncludedBuildController {
     private final IncludedBuildState includedBuild;
     private final ProjectStateRegistry projectStateRegistry;
     private final WorkerLeaseRegistry.WorkerLease parentLease;
@@ -93,15 +92,6 @@ class DefaultIncludedBuildController extends AbstractIncludedBuildController imp
             stateChange.signalAll();
         } finally {
             lock.unlock();
-        }
-    }
-
-    @Override
-    public void stop() {
-        ArrayList<Throwable> failures = new ArrayList<>();
-        awaitTaskCompletion(failures::add);
-        if (!failures.isEmpty()) {
-            throw new MultipleBuildFailures(failures);
         }
     }
 

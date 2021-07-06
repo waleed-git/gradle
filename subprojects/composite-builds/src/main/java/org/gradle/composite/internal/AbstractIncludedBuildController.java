@@ -24,6 +24,7 @@ import org.gradle.execution.plan.TaskNode;
 import org.gradle.execution.plan.TaskNodeFactory;
 import org.gradle.internal.build.CompositeBuildParticipantBuildState;
 import org.gradle.internal.build.ExportedTaskNode;
+import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.graph.CachingDirectedGraphWalker;
 import org.gradle.internal.graph.DirectedGraphRenderer;
 import org.gradle.internal.logging.text.StyledTextOutput;
@@ -37,7 +38,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
-abstract class AbstractIncludedBuildController implements IncludedBuildController {
+abstract class AbstractIncludedBuildController implements IncludedBuildController, Stoppable {
     private enum State {
         DiscoveringTasks, ReadyToRun, RunningTasks, Finished
     }
@@ -127,6 +128,13 @@ abstract class AbstractIncludedBuildController implements IncludedBuildControlle
         }
         scheduled.clear();
         state = State.Finished;
+    }
+
+    @Override
+    public void stop() {
+        if (state == State.RunningTasks) {
+            throw new IllegalStateException("Build is currently running tasks.");
+        }
     }
 
     protected abstract void doStartTaskExecution(ExecutorService executorService);
