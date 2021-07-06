@@ -32,6 +32,7 @@ public class DefaultBuildWorkGraph implements BuildWorkGraph {
     private final TaskExecutionGraphInternal taskGraph;
     private final ProjectStateRegistry projectStateRegistry;
     private final BuildLifecycleController controller;
+    private boolean tasksScheduled;
 
     public DefaultBuildWorkGraph(TaskExecutionGraphInternal taskGraph, ProjectStateRegistry projectStateRegistry, BuildLifecycleController controller) {
         this.taskGraph = taskGraph;
@@ -57,6 +58,8 @@ public class DefaultBuildWorkGraph implements BuildWorkGraph {
         if (nodesByPath.get(node.taskPath) != taskNode) {
             throw new IllegalArgumentException();
         }
+        node.maybeMarkAsScheduled();
+        tasksScheduled = true;
         projectStateRegistry.withMutableStateOfAllProjects(() -> controller.populateWorkGraph(taskGraph -> {
             taskGraph.addEntryTasks(Collections.singletonList(node.getTask()));
         }));
@@ -64,21 +67,27 @@ public class DefaultBuildWorkGraph implements BuildWorkGraph {
 
     @Override
     public void prepareForExecution() {
-        controller.populateWorkGraph(taskGraph -> taskGraph.populate());
+        if (tasksScheduled) {
+            controller.populateWorkGraph(taskGraph -> taskGraph.populate());
+        }
     }
 
     @Override
     public void execute() {
+        if (!tasksScheduled) {
+            return;
+        }
         try {
             controller.executeTasks();
         } finally {
             markPendingTasksAsSkipped();
+            tasksScheduled = false;
         }
     }
 
     private void markPendingTasksAsSkipped() {
         for (DefaultExportedTaskNode value : nodesByPath.values()) {
-            value.maybeMarkAsSkipped();
+            value.maybeMarkAsFinished();
         }
     }
 
@@ -107,10 +116,14 @@ public class DefaultBuildWorkGraph implements BuildWorkGraph {
         return null;
     }
 
+    private enum TaskState {
+        Idle, Scheduled, Finished
+    }
+
     private class DefaultExportedTaskNode implements ExportedTaskNode {
         final String taskPath;
         TaskInternal task;
-        boolean executionCompleted;
+        TaskState state = TaskState.Idle;
 
         DefaultExportedTaskNode(String taskPath) {
             this.taskPath = taskPath;
@@ -137,23 +150,34 @@ public class DefaultBuildWorkGraph implements BuildWorkGraph {
         @Override
         public IncludedBuildTaskResource.State getTaskState() {
             synchronized (lock) {
+                if (state == TaskState.Idle) {
+                    return IncludedBuildTaskResource.State.SUCCESS;
+                }
+
                 getTask();
                 if (task.getState().getFailure() != null) {
                     return IncludedBuildTaskResource.State.FAILED;
                 } else if (task.getState().getExecuted()) {
                     return IncludedBuildTaskResource.State.SUCCESS;
-                } else if (executionCompleted) {
+                } else if (state == TaskState.Finished) {
                     // Here "failed" means "output is not available, so do not run dependents"
                     return IncludedBuildTaskResource.State.FAILED;
                 } else {
+                    // Scheduled but not completed
                     return IncludedBuildTaskResource.State.WAITING;
                 }
             }
         }
 
-        public void maybeMarkAsSkipped() {
+        public void maybeMarkAsFinished() {
             synchronized (lock) {
-                executionCompleted = true;
+                state = TaskState.Finished;
+            }
+        }
+
+        public void maybeMarkAsScheduled() {
+            synchronized (lock) {
+                state = TaskState.Scheduled;
             }
         }
     }
